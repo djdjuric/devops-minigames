@@ -78,10 +78,11 @@ export default function Chat() {
   return (
     <aside className={`duck-guide ${open ? "open" : ""}`} aria-label="Duck learning assistant">
       {!open && bubble && (
-        <div className="duck-bubble" role="status">
+        <div key={`bubble-${screen.id}`} className="duck-bubble speaking" role="status">
           <button className="bubble-close" onClick={() => setBubble(false)} aria-label="Dismiss Duck explanation">
             ×
           </button>
+          <span className="duck-quack" aria-hidden="true">Quack, operator.</span>
           <strong>{screen.title}</strong>
           <p>{screen.summary}</p>
           <button className="text-button" onClick={() => quick("Explain this screen")}>Explain it</button>
@@ -91,9 +92,15 @@ export default function Chat() {
       {open && (
         <section className="chat" aria-label="Chat with the Duck">
           <div className="chat-head">
-            <div>
-              <strong>The Duck</strong>
-              <small>{screen.title}</small>
+            <div className="chat-identity">
+              <span className={`duck-mini ${busy ? "speaking" : ""}`} aria-hidden="true">
+                <span className="duck-eye" />
+                <span className="duck-bill" />
+              </span>
+              <span>
+                <strong>The Duck</strong>
+                <small>{busy ? "Thinking out loud..." : screen.title}</small>
+              </span>
             </div>
             <button className="btn small" onClick={() => setOpen(false)} aria-label="Minimize chat">
               Minimize
@@ -130,7 +137,8 @@ export default function Chat() {
 
       {!open && (
         <button
-          className="duck-avatar"
+          key={`avatar-${screen.id}`}
+          className={`duck-avatar ${bubble ? "speaking" : ""}`}
           onClick={() => {
             setOpen(true);
             setBubble(false);

@@ -11,7 +11,7 @@ test("mission control routes to a simulation without console errors", async ({ p
   page.on("pageerror", (error) => errors.push(error.message));
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Welcome, new hire" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cloud operations training ground" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open the Duck assistant" })).toBeVisible();
   await page.getByRole("link", { name: /Security Group Defender/ }).click();
   await expect(page.getByRole("heading", { name: "How to play" })).toBeVisible();
@@ -42,13 +42,25 @@ test("progress survives reload", async ({ page }) => {
 
 test("Duck follows the screen and explains it offline", async ({ page }) => {
   await page.goto("/#/k8s");
-  await expect(page.getByRole("status")).toContainText("Kubernetes Control Room");
+  await expect(page.getByRole("status")).toContainText("EKS Cluster Control Room");
   await page.getByRole("button", { name: "Explain it" }).click();
   await expect(page.getByRole("region", { name: "Chat with the Duck" })).toBeVisible();
-  await expect(page.getByText(/Tune replicas, probes, resources and rollouts/).last()).toBeVisible();
+  await expect(page.getByText(/Ship releases, trace load-balancer failures/).last()).toBeVisible();
 });
 
-test("Shell Lab supports a complete debugging interaction", async ({ page }) => {
+test("Kubernetes deployment scenario supports rollout and rollback", async ({ page }) => {
+  await page.goto("/#/k8s");
+  await page.getByRole("button", { name: "Start mission" }).click();
+  await expect(page.getByRole("heading", { name: "Release api:v2 without downtime", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Start a rolling update/ }).click();
+  await expect(page.getByText("Good operational call")).toBeVisible();
+  await page.getByRole("button", { name: "Continue incident" }).click();
+  await page.getByRole("button", { name: /Pause the rollout and roll back/ }).click();
+  await page.getByRole("button", { name: "Complete scenario" }).click();
+  await expect(page.getByText(/Incident resolved! \+100 pts/)).toBeVisible();
+});
+
+test("Container Task Lab supports a complete debugging interaction", async ({ page }) => {
   await page.goto("/#/shell");
   await page.getByRole("button", { name: "Start mission" }).click();
   const shell = page.getByLabel("Shell command");

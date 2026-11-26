@@ -16,13 +16,16 @@ function renderApp() {
 describe("mission control", () => {
   test("shows progress HUD, simulations, and persistent Duck guide", () => {
     renderApp();
-    expect(screen.getByRole("link", { name: /DevOps Minigames/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /CloudOps Arcade/i })).toBeInTheDocument();
     expect(screen.getByText("Intern")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /Kubernetes Control Room/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /Shell Lab/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Open the Duck assistant/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /EKS Cluster Control Room/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /Container Task Lab/i })).toBeInTheDocument();
+    const duck = screen.getByRole("button", { name: /Open the Duck assistant/i });
+    expect(duck).toBeInTheDocument();
+    expect(duck).toHaveClass("speaking");
+    expect(screen.getByText("Quack, operator.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "How it works" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Mission control");
+    expect(screen.getByRole("status")).toHaveTextContent("CloudOps mission board");
   });
 
   test("opens a mission briefing and starts the mission", async () => {
@@ -70,6 +73,6 @@ describe("mission control", () => {
     renderApp();
     await user.click(screen.getByRole("button", { name: "Explain it" }));
     expect(await screen.findByRole("region", { name: "Chat with the Duck" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/Choose a mission, earn XP/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/Choose a cloud operations mission, earn XP/).length).toBeGreaterThan(0));
   });
 });

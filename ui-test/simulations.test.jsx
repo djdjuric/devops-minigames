@@ -8,16 +8,18 @@ import ShellGame from "../src/games/ShellGame.jsx";
 
 const wrap = (component) => render(<DuckProvider>{component}</DuckProvider>);
 
-test("Kubernetes simulation reacts to a fixed readiness path", async () => {
+test("Kubernetes simulation rolls out and safely reverts a bad release", async () => {
   const user = userEvent.setup();
   wrap(<K8sGame onFinish={() => { }} />);
-  const path = screen.getByLabelText("Readiness path");
-  await user.clear(path);
-  await user.type(path, "/health");
-  await user.click(screen.getByRole("button", { name: "Apply deployment" }));
-  expect(screen.getByRole("button", { name: "Rolling out..." })).toBeDisabled();
-  expect(await screen.findByText(/Deployment healthy!/, {}, { timeout: 2500 })).toBeInTheDocument();
-  expect(screen.getAllByText("Ready")).toHaveLength(2);
+  expect(screen.getByText("Release api:v2 without downtime")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: /Start a rolling update/ }));
+  expect(screen.getByText("Good operational call")).toBeInTheDocument();
+  expect(screen.getAllByText(/api-91f-a/).length).toBeGreaterThan(0);
+  await user.click(screen.getByRole("button", { name: "Continue incident" }));
+  expect(screen.getByText(/production metrics are getting worse/)).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: /Pause the rollout and roll back/ }));
+  await user.click(screen.getByRole("button", { name: "Complete scenario" }));
+  expect(screen.getByText(/Incident resolved! \+100 pts/)).toBeInTheDocument();
 });
 
 test("Shell simulation accepts the real fix commands", async () => {

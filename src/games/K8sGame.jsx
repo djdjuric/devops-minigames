@@ -1,158 +1,164 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDuckScreen } from "../components/DuckContext.jsx";
 import DocLink from "../components/DocLink.jsx";
 import Points from "../components/Points.jsx";
 import { k8sLevels } from "../data/k8sLevels.js";
-import { simulateDeployment, simulationScore } from "../lib/k8sSim.js";
+import {
+  chooseAction,
+  continueMission,
+  currentStep,
+  displayedScene,
+  initialMissionState,
+  missionScore,
+  revealHint,
+} from "../lib/k8sSim.js";
 
-const MEMORY = [64, 128, 256, 384, 512, 768, 1024];
-
-function NumberControl({ label, value, min, max, onChange, disabled }) {
+function Metrics({ scene }) {
   return (
-    <label className="sim-control">
-      <span>{label}</span>
-      <div className="stepper">
-        <button className="btn small" disabled={disabled || value <= min} onClick={() => onChange(value - 1)} aria-label={`Decrease ${label}`}>
-          −
-        </button>
-        <strong>{value}</strong>
-        <button className="btn small" disabled={disabled || value >= max} onClick={() => onChange(value + 1)} aria-label={`Increase ${label}`}>
-          +
-        </button>
+    <div className="ops-metrics" aria-label="Live workload metrics">
+      <div><span>Status</span><strong className={`status-${scene.status.toLowerCase().replaceAll(" ", "-")}`}>{scene.status}</strong></div>
+      <div><span>Traffic</span><strong>{scene.traffic}</strong></div>
+      <div><span>Error rate</span><strong>{scene.errorRate}</strong></div>
+      <div><span>p95 latency</span><strong>{scene.latency}</strong></div>
+    </div>
+  );
+}
+
+function WorkloadMap({ scene, animating }) {
+  return (
+    <section className={`workload-map ${animating ? "changing" : ""}`} aria-label="Live Kubernetes workload">
+      <div className="traffic-source">
+        <small>Users</small>
+        <strong>{scene.traffic}</strong>
       </div>
-    </label>
+      <span className="flow-arrow" aria-hidden="true" />
+      <div className="lb-box">
+        <small>Load balancer</small>
+        <strong>Service</strong>
+      </div>
+      <span className="flow-arrow" aria-hidden="true" />
+      <div className="workload-targets">
+        {scene.pods.map((pod) => (
+          <div key={pod.name} className={`workload-pod ${pod.state.toLowerCase()}`}>
+            <span className="pod-dot" aria-hidden="true" />
+            <strong>{pod.name}</strong>
+            <small>{pod.version} · {pod.state}</small>
+            <small>{pod.zone}</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Evidence({ scene }) {
+  return (
+    <div className="ops-evidence">
+      <div className="card">
+        <h3>Traffic flow</h3>
+        {scene.routes?.length ? (
+          <ol className="route-list">{scene.routes.map((route) => <li key={route}>{route}</li>)}</ol>
+        ) : <p className="muted">Service routes to Ready endpoints.</p>}
+      </div>
+      <div className="card event-log">
+        <h3>Events and signals</h3>
+        {scene.events.map((event) => <p key={event}><span aria-hidden="true">›</span> {event}</p>)}
+      </div>
+    </div>
   );
 }
 
 function Level({ level, index, total, score, onDone }) {
-  useDuckScreen({ id: `k8s-${level.id}`, title: level.title, summary: level.brief, concepts: ["readiness", "capacity", "resource requests and limits", "rolling updates"], hint: level.hints[0] });
-  const [config, setConfig] = useState(level.initial);
-  const [result, setResult] = useState(() => simulateDeployment(level, level.initial));
-  const [phase, setPhase] = useState("editing");
-  const [attempts, setAttempts] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [outcome, setOutcome] = useState(null);
+  const [state, setState] = useState(initialMissionState);
+  const [gaveUp, setGaveUp] = useState(false);
+  const step = currentStep(level, state);
+  const scene = displayedScene(level, state);
+  const finished = state.solved || gaveUp;
+  const points = gaveUp ? 0 : missionScore(state);
 
-  useEffect(() => {
-    if (phase !== "deploying") return undefined;
-    const id = setTimeout(() => {
-      const next = simulateDeployment(level, config);
-      setResult(next);
-      setAttempts((value) => value + 1);
-      setPhase("result");
-      if (next.solved) setOutcome({ points: simulationScore(attempts + 1, hintsUsed), skipped: false });
-    }, 1100);
-    return () => clearTimeout(id);
-  }, [phase, config, level, attempts, hintsUsed]);
+  useDuckScreen({
+    id: `k8s-${level.id}-${state.stepIndex}`,
+    title: level.title,
+    summary: `${level.brief} Current signal: ${scene.status}. Decision: ${step?.prompt ?? "Review the debrief."}`,
+    concepts: level.concepts,
+    hint: level.hints[Math.min(state.hintsUsed, level.hints.length - 1)],
+  });
 
-  const set = (key, value) => {
-    setConfig((current) => ({ ...current, [key]: value }));
-    if (phase === "result") setPhase("editing");
-  };
-  const locked = phase === "deploying" || Boolean(outcome);
-  const displayed = phase === "deploying" ? { ...result, pods: Array.from({ length: config.replicas }, (_, i) => ({ id: `pending-${i}`, state: "Starting", ready: false })) } : result;
+  function select(actionId) {
+    setState((current) => chooseAction(level, current, actionId));
+  }
+
+  function proceed() {
+    setState((current) => continueMission(level, current));
+  }
 
   return (
     <div>
       <div className="progress">
-        <span>Level {index + 1} / {total}</span>
-        <span className="tag">Kubernetes</span>
+        <span>Scenario {index + 1} / {total}</span>
+        <span className="bar" aria-hidden="true"><span style={{ width: `${((index + state.stepIndex / level.steps.length) / total) * 100}%` }} /></span>
         <Points value={score} />
       </div>
-      <div className="card">
-        <h3>{level.title}</h3>
-        <p>{level.brief}</p>
+
+      <div className="card ops-brief">
+        <div><span className="tag">Kubernetes operations</span><h3>{level.title}</h3><p>{level.brief}</p></div>
+        <span className="step-counter">Decision {Math.min(state.stepIndex + 1, level.steps.length)} / {level.steps.length}</span>
       </div>
 
-      <section className="k8s-cluster" aria-label="Kubernetes deployment simulation">
-        <div className="traffic-meter">
-          <span>Incoming</span>
-          <strong>{level.traffic} req/s</strong>
-          <span className="traffic-line" aria-hidden="true" />
-        </div>
-        <div className="service-box">
-          <strong>Service</strong>
-          <small>{displayed.readyPods ?? 0} Ready endpoints</small>
-        </div>
-        <div className="pod-grid">
-          {displayed.pods.map((pod) => (
-            <div key={pod.id} className={`pod ${pod.state.toLowerCase()}`}>
-              <span className="pod-dot" />
-              <strong>{pod.id}</strong>
-              <small>{pod.state}</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      <Metrics scene={scene} />
+      <WorkloadMap scene={scene} animating={Boolean(state.selection)} />
+      <Evidence scene={scene} />
 
-      <div className="sim-layout">
-        <div className="card sim-controls">
-          <h3>Deployment manifest</h3>
-          <NumberControl label="Replicas" value={config.replicas} min={1} max={6} disabled={locked} onChange={(v) => set("replicas", v)} />
-          <label className="sim-control">
-            <span>Memory request</span>
-            <select value={config.memoryRequest} disabled={locked} onChange={(e) => set("memoryRequest", Number(e.target.value))}>
-              {MEMORY.map((m) => <option key={m} value={m}>{m} MiB</option>)}
-            </select>
-          </label>
-          <label className="sim-control">
-            <span>Memory limit</span>
-            <select value={config.memoryLimit} disabled={locked} onChange={(e) => set("memoryLimit", Number(e.target.value))}>
-              {MEMORY.map((m) => <option key={m} value={m}>{m} MiB</option>)}
-            </select>
-          </label>
-          <label className="sim-control">
-            <span>Readiness path</span>
-            <input value={config.readinessPath} disabled={locked} onChange={(e) => set("readinessPath", e.target.value)} spellCheck={false} />
-          </label>
-          {level.requireZeroDowntime && (
-            <>
-              <NumberControl label="maxUnavailable" value={config.maxUnavailable} min={0} max={3} disabled={locked} onChange={(v) => set("maxUnavailable", v)} />
-              <NumberControl label="maxSurge" value={config.maxSurge} min={0} max={3} disabled={locked} onChange={(v) => set("maxSurge", v)} />
-            </>
-          )}
-        </div>
-
-        <div className="card checks">
-          <h3>Live checks</h3>
-          {result.checks.map((check) => (
-            <div key={check.id} className={`check ${phase === "editing" && attempts === 0 ? "unknown" : check.pass ? "pass" : "fail"}`}>
-              <span className="check-mark" aria-hidden="true" />
-              {check.label}
-            </div>
-          ))}
-          <div className="capacity">
-            <span>Capacity</span>
-            <strong>{result.capacity} / {level.traffic} req/s</strong>
+      {!finished && (
+        <section className="card decision-panel">
+          <span className="decision-label">Your next action</span>
+          <h3>{step.prompt}</h3>
+          <div className="decision-options">
+            {step.actions.map((candidate) => (
+              <button
+                key={candidate.id}
+                className={`btn decision-option ${state.selection?.id === candidate.id ? (candidate.good ? "right" : "wrong") : ""}`}
+                disabled={Boolean(state.selection)}
+                onClick={() => select(candidate.id)}
+              >
+                {candidate.label}
+              </button>
+            ))}
           </div>
-        </div>
-      </div>
+          {state.selection && (
+            <div className={`feedback ${state.selection.good ? "good" : "bad"}`} role="status">
+              <strong>{state.selection.good ? "Good operational call" : "That increases risk"}</strong>
+              <p>{state.selection.outcome}</p>
+              <button className={`btn ${state.selection.good ? "primary" : ""}`} onClick={proceed} autoFocus>
+                {state.selection.good ? (state.stepIndex + 1 >= level.steps.length ? "Complete scenario" : "Continue incident") : "Try another action"}
+              </button>
+            </div>
+          )}
+        </section>
+      )}
 
-      {!outcome && (
+      {!finished && !state.selection && (
         <div className="row">
-          <button className="btn primary" disabled={phase === "deploying"} onClick={() => setPhase("deploying")}>
-            {phase === "deploying" ? "Rolling out..." : "Apply deployment"}
-          </button>
-          <button className="btn" disabled={phase === "deploying" || hintsUsed >= level.hints.length} onClick={() => setHintsUsed((n) => n + 1)}>
-            Hint (-20 pts)
-          </button>
-          <button className="btn" disabled={phase === "deploying"} onClick={() => setOutcome({ points: 0, skipped: true })}>
-            Give up
-          </button>
+          <button className="btn" disabled={state.hintsUsed >= level.hints.length} onClick={() => setState((current) => revealHint(level, current))}>Hint (-20 pts)</button>
+          <button className="btn" onClick={() => setGaveUp(true)}>Show debrief</button>
         </div>
       )}
-      {hintsUsed > 0 && !outcome && (
+      {!finished && state.hintsUsed > 0 && (
         <div className="card hints">
-          {level.hints.slice(0, hintsUsed).map((hint, i) => <p key={hint}><strong>Hint {i + 1}:</strong> {hint}</p>)}
+          {level.hints.slice(0, state.hintsUsed).map((hint, hintIndex) => <p key={hint}><strong>Hint {hintIndex + 1}:</strong> {hint}</p>)}
         </div>
       )}
-      {outcome && (
-        <div className={`feedback ${outcome.skipped ? "bad" : "good"}`} role="status">
-          <strong>{outcome.skipped ? "Mission debrief" : `Deployment healthy! +${outcome.points} pts`}</strong>
+
+      {finished && (
+        <div className={`feedback ${gaveUp ? "bad" : "good"}`} role="status">
+          <strong>{gaveUp ? "Scenario debrief" : `Incident resolved! +${points} pts`}</strong>
+          {gaveUp && (
+            <ol>{level.steps.slice(state.stepIndex).map((remaining) => <li key={remaining.id}>{remaining.actions.find((candidate) => candidate.good).label}</li>)}</ol>
+          )}
           <p>{level.learned}</p>
           <div className="feedback-actions">
             <DocLink href={level.doc} />
-            <button className="btn primary" onClick={() => onDone(outcome.points)} autoFocus>{index + 1 >= total ? "Finish" : "Next level"}</button>
+            <button className="btn primary" onClick={() => onDone(points)} autoFocus>{index + 1 >= total ? "Finish" : "Next scenario"}</button>
           </div>
         </div>
       )}
@@ -163,6 +169,7 @@ function Level({ level, index, total, score, onDone }) {
 export default function K8sGame({ onFinish }) {
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
+
   function done(points) {
     const next = score + points;
     if (index + 1 >= k8sLevels.length) onFinish(next, k8sLevels.length * 100);
@@ -171,5 +178,6 @@ export default function K8sGame({ onFinish }) {
       setIndex((value) => value + 1);
     }
   }
+
   return <Level key={k8sLevels[index].id} level={k8sLevels[index]} index={index} total={k8sLevels.length} score={score} onDone={done} />;
 }

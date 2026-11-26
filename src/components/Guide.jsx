@@ -17,12 +17,12 @@ const sections = [
     text: "Each packet has a source IP, protocol, and destination port. An inbound rule must match all three. Security groups contain allow rules only; unmatched traffic is blocked by default.",
   },
   {
-    title: "Kubernetes Control Room",
+    title: "EKS Cluster Control Room",
     badge: "K8S",
-    text: "Pods become Ready only when their memory limit is sufficient and the readiness path matches the application. Ready replicas determine capacity. Rollout settings determine whether capacity survives a deployment.",
+    text: "Operate realistic Kubernetes incidents through visual traffic and workload state: roll out and roll back releases, repair Service selectors, evaluate canaries, autoscale workloads and nodes, fix Ingress paths, and protect availability during maintenance.",
   },
   {
-    title: "Shell Lab",
+    title: "Container Task Lab",
     badge: "SH",
     text: "The terminal implements a safe subset of Docker and Linux commands against an in-memory system. Container state, logs, ports, environment variables, mounts, and memory limits behave consistently across commands.",
   },

@@ -20,9 +20,9 @@ const HOW = {
     "Let customers in and keep attackers out. Failed runs cost points."
   ],
   "k8s": [
-    "Adjust a real Deployment manifest using the control panel.",
-    "Apply it and watch Pods become Ready, NotReady, or OOMKilled.",
-    "Meet capacity, probe, resource, and rolling-update checks together."
+    "Read the live traffic, workload map, metrics, and Kubernetes events.",
+    "Choose the safest operational action and watch the cluster state change.",
+    "Resolve deployments, load balancing, canaries, autoscaling, ingress, and availability incidents."
   ],
   "iam": [
     "Read the policy and the request.",
@@ -57,13 +57,13 @@ const HOW = {
 };
 
 export const games = [
-  { id: "k8s", howTo: HOW.k8s, title: "Kubernetes Control Room", badge: "K8S", topics: ["Kubernetes", "SRE"], blurb: "Tune replicas, probes, resources and rollouts while traffic hits the cluster.", duck: "You are operating a Kubernetes Deployment. Running is not the same as Ready: probes control endpoints, requests affect scheduling, limits affect survival, and replicas provide capacity.", Component: K8sGame },
-  { id: "shell", howTo: HOW.shell, title: "Shell Lab", badge: "SH", topics: ["Docker", "Linux", "Logs"], blurb: "A simulated terminal. Debug broken containers and noisy logs.", Component: ShellGame },
-  { id: "sg", howTo: HOW.sg, title: "Security Group Defender", badge: "SG", topics: ["AWS", "Networking"], blurb: "Fix the firewall rules, then send traffic and watch who gets through.", Component: SgGame },
-  { id: "iam", howTo: HOW.iam, title: "IAM Policy Debugger", badge: "IAM", topics: ["AWS"], blurb: "Read the policy. Allow or deny?", Component: IamGame },
-  { id: "cidr", howTo: HOW.cidr, title: "Subnet Sizer", badge: "NET", topics: ["AWS", "Networking"], blurb: "CIDR math with AWS reserved IPs.", Component: CidrGame },
-  { id: "matcher", howTo: HOW.matcher, title: "Tool Matcher", badge: "MIX", topics: ["AWS", "K8s", "Linux", "Git"], blurb: "Match tools and services to what they do.", Component: MatcherGame },
-  { id: "incident", howTo: HOW.incident, title: "Incident Responder", badge: "OPS", topics: ["AWS", "K8s", "Git", "Linux"], blurb: "Four outages. Pick the right next step.", Component: IncidentGame },
-  { id: "bugs", howTo: HOW.bugs, title: "Spot the Bug", badge: "BUG", topics: ["Terraform", "K8s", "Docker", "CI"], blurb: "Find the flaw in real-looking config.", Component: BugGame },
-  { id: "quiz", howTo: HOW.quiz, title: "Quiz Blitz", badge: "QZ", topics: ["Everything"], blurb: "Timed questions across the whole stack.", Component: QuizGame },
+  { id: "k8s", howTo: HOW.k8s, title: "EKS Cluster Control Room", badge: "K8S", context: "EKS workload concepts", topics: ["Kubernetes", "SRE"], blurb: "Ship releases, trace load-balancer failures, manage canaries and recover Kubernetes incidents.", duck: "You are operating a live Kubernetes workload. Read the traffic path, metrics, events, and rollout state before choosing an action; readiness alone does not prove that users are healthy.", Component: K8sGame },
+  { id: "shell", howTo: HOW.shell, title: "Container Task Lab", badge: "SH", context: "ECS-style troubleshooting", topics: ["Docker", "Linux", "Logs"], blurb: "A simulated terminal. Debug broken containers and noisy logs.", Component: ShellGame },
+  { id: "sg", howTo: HOW.sg, title: "Security Group Defender", badge: "SG", context: "VPC network controls", topics: ["AWS", "Networking"], blurb: "Fix the firewall rules, then send traffic and watch who gets through.", Component: SgGame },
+  { id: "iam", howTo: HOW.iam, title: "IAM Policy Debugger", badge: "IAM", context: "AWS identity and access", topics: ["AWS"], blurb: "Read the policy. Allow or deny?", Component: IamGame },
+  { id: "cidr", howTo: HOW.cidr, title: "VPC Subnet Builder", badge: "NET", context: "VPC address planning", topics: ["AWS", "Networking"], blurb: "CIDR math with AWS reserved IPs.", Component: CidrGame },
+  { id: "matcher", howTo: HOW.matcher, title: "Cloud Service Matcher", badge: "MIX", context: "Cloud architecture", topics: ["AWS", "K8s", "Linux", "Git"], blurb: "Match tools and services to what they do.", Component: MatcherGame },
+  { id: "incident", howTo: HOW.incident, title: "Cloud Incident Responder", badge: "OPS", context: "CloudWatch-style operations", topics: ["AWS", "K8s", "Git", "Linux"], blurb: "Four outages. Pick the right next step.", Component: IncidentGame },
+  { id: "bugs", howTo: HOW.bugs, title: "Infrastructure Bug Hunt", badge: "BUG", context: "Infrastructure as code", topics: ["Terraform", "K8s", "Docker", "CI"], blurb: "Find the flaw in real-looking config.", Component: BugGame },
+  { id: "quiz", howTo: HOW.quiz, title: "CloudOps Blitz", badge: "QZ", context: "AWS and DevOps", topics: ["Everything"], blurb: "Timed questions across the whole stack.", Component: QuizGame },
 ];

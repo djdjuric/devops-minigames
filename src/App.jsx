@@ -27,8 +27,8 @@ function useHashRoute() {
 function Home({ profile }) {
   useDuckScreen({
     id: "home",
-    title: "Mission control",
-    summary: "Choose a mission, earn XP, unlock trophies, and improve your rank. Progress saves automatically in this browser.",
+    title: "CloudOps mission board",
+    summary: "Choose a cloud operations mission, earn XP, unlock trophies, and improve your rank. AWS concepts appear where they fit the lesson, without pretending this is a real cloud console.",
     concepts: ["XP and ranks", "mission stars", "official documentation"],
     hint: "Start with a simulation marked New, or replay a mission with fewer stars.",
   });
@@ -40,7 +40,7 @@ function Home({ profile }) {
     <>
       <section className="hero card">
         <div>
-          <h2>{firstTime ? "Welcome, new hire" : `Welcome back, ${rank.name}`}</h2>
+          <h2>{firstTime ? "Cloud operations training ground" : `Back on shift, ${rank.name}`}</h2>
           <p>
             {rank.next
               ? `${rank.toNext} XP until you are promoted to ${rank.next.name}.`
@@ -48,10 +48,10 @@ function Home({ profile }) {
           </p>
         </div>
         <a className="btn primary" href={`#/${recommended.id}`}>
-          {firstTime ? "Start with" : "Play next:"} {recommended.title}
+          {firstTime ? "Launch first mission:" : "Recommended:"} {recommended.title}
         </a>
       </section>
-      <h2 className="section-title">Missions</h2>
+      <h2 className="section-title">Mission board</h2>
       <div className="grid">
         {games.map((game) => {
           const stats = profile.games[game.id];
@@ -61,6 +61,7 @@ function Home({ profile }) {
                 <span className="badge">{game.badge}</span>
                 {stats ? <Stars count={starsFor(stats.bestPct)} /> : <span className="tag new">New</span>}
               </div>
+              <span className="cloud-context">{game.context}</span>
               <h2>{game.title}</h2>
               <p>{game.blurb}</p>
               <div className="tags">
@@ -114,6 +115,7 @@ function GameScreen({ game, profile, onResult }) {
       <h2 className="game-title">{game.title}</h2>
       {!started ? (
         <div className="card intro">
+          <span className="cloud-context">{game.context}</span>
           <p className="lead">{game.blurb}</p>
           <h3>How to play</h3>
           <ul>
@@ -176,7 +178,7 @@ export default function App() {
     <div className="app">
       <header>
         <a href="#/" className="logo">
-          DevOps Minigames
+          CloudOps Arcade
         </a>
         <Hud profile={profile} />
       </header>
@@ -191,7 +193,7 @@ export default function App() {
           <Home profile={profile} />
         )}
       </main>
-      <footer>Open source. Questions are based on official AWS, Kubernetes, Git and Linux documentation.</footer>
+      <footer>Independent learning game. AWS concepts and names belong to Amazon Web Services; lessons link to official documentation.</footer>
       <Chat />
     </div>
   );

@@ -1,20 +1,20 @@
-# devops-minigames
+# CloudOps Arcade
 
-Short browser games that teach AWS, Kubernetes, Linux, Git and IaC. Players need nothing installed. Every answer links to the official documentation.
+A browser-based DevOps game with a subtle cloud-operations theme. It teaches AWS, Kubernetes, Linux, Git and infrastructure as code through safe simulations, without pretending to be a real cloud console. Every answer links to official documentation.
 
 ## Games
 
 | Game | What it teaches |
 | --- | --- |
-| Kubernetes Control Room | Replicas, readiness probes, requests, limits, capacity and zero-downtime rollouts |
-| Shell Lab | Docker logs, inspection, ports, memory limits, mounts, environment variables and log filtering |
+| EKS Cluster Control Room | Rolling deployments, rollbacks, Services, load balancing, canaries, autoscaling, Ingress and availability |
+| Container Task Lab | Docker logs, inspection, ports, memory limits, mounts, environment variables and log filtering |
 | Security Group Defender | Protocols, port ranges, source CIDRs, least privilege and default deny |
 | IAM Policy Debugger | Policy evaluation: explicit deny, implicit deny, conditions, boundaries |
-| Subnet Sizer | CIDR math, AWS reserved addresses, overlap and alignment |
-| Tool Matcher | AWS, Kubernetes, Git and Linux vocabulary |
-| Incident Responder | Troubleshooting an ALB 502, CrashLoopBackOff, a leaked secret, inode exhaustion |
-| Spot the Bug | Insecure or broken Terraform, Kubernetes, Dockerfile, Actions and Bash |
-| Quiz Blitz | Timed questions across the stack |
+| VPC Subnet Builder | CIDR math, AWS reserved addresses, overlap and alignment |
+| Cloud Service Matcher | AWS, Kubernetes, Git and Linux vocabulary |
+| Cloud Incident Responder | Troubleshooting an ALB 502, CrashLoopBackOff, a leaked secret, inode exhaustion |
+| Infrastructure Bug Hunt | Insecure or broken Terraform, Kubernetes, Dockerfile, Actions and Bash |
+| CloudOps Blitz | Timed questions across the stack |
 
 XP, ranks, daily streaks, trophies, stars, scores and play counts are stored in the browser's localStorage. The Trophy cabinet can export and restore a JSON backup.
 
@@ -33,7 +33,7 @@ npm install
 npm run dev        # frontend only, chat falls back to the local bot
 npm run cf:dev     # build, then run Pages with the function and AI binding
 npm run lint
-npm test           # 58 logic tests and 7 component interaction tests
+npm test           # 53 logic tests and 8 component interaction tests
 npm run test:ui    # Playwright in desktop and mobile Chromium
 npm run build
 ```
@@ -48,7 +48,7 @@ Content lives in `src/data/`. Each question or scenario must have an explanation
 
 `.github/workflows/ci.yml` runs on every pull request and push to `main`:
 
-1. Lint, 58 logic tests, 7 React component interaction tests, build and `npm audit` for production dependencies.
+1. Lint, 53 logic tests, 8 React component interaction tests, build and `npm audit` for production dependencies.
 2. Playwright tests in desktop and mobile Chromium, including simulation flows, persistence, responsive overflow, console errors and axe accessibility checks.
 3. Secret scan with gitleaks.
 4. Preview deploy of same-repo pull requests (forks never receive secrets).

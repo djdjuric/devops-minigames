@@ -1,57 +1,42 @@
-const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || min));
+export function initialMissionState() {
+  return { stepIndex: 0, mistakes: 0, hintsUsed: 0, selection: null, solved: false };
+}
 
-export function normalizeConfig(config) {
+export function currentStep(level, state) {
+  return level.steps[state.stepIndex];
+}
+
+export function chooseAction(level, state, actionId) {
+  if (state.solved || state.selection) return state;
+  const step = currentStep(level, state);
+  const selected = step.actions.find((action) => action.id === actionId);
+  if (!selected) throw new Error(`Unknown action: ${actionId}`);
   return {
-    replicas: clamp(config.replicas, 1, 6),
-    memoryRequest: clamp(config.memoryRequest, 32, 2048),
-    memoryLimit: clamp(config.memoryLimit, 32, 2048),
-    readinessPath: String(config.readinessPath || "/"),
-    maxUnavailable: clamp(config.maxUnavailable, 0, 6),
-    maxSurge: clamp(config.maxSurge, 0, 6),
+    ...state,
+    mistakes: state.mistakes + (selected.good ? 0 : 1),
+    selection: selected,
   };
 }
 
-export function simulateDeployment(level, rawConfig) {
-  const config = normalizeConfig(rawConfig);
-  const pods = Array.from({ length: config.replicas }, (_, index) => {
-    const memoryOk = config.memoryLimit >= level.memoryNeeded;
-    const ready = memoryOk && config.readinessPath === level.healthPath;
-    return {
-      id: `pod-${index + 1}`,
-      memoryOk,
-      ready,
-      state: !memoryOk ? "OOMKilled" : ready ? "Ready" : "NotReady",
-    };
-  });
-  const readyPods = pods.filter((pod) => pod.ready).length;
-  const capacity = readyPods * level.requestsPerPod;
-  const trafficOk = capacity >= level.traffic;
-  const requestOk = config.memoryRequest >= level.minimumRequest;
-  const resourceOrderOk = config.memoryLimit >= config.memoryRequest;
-  const rolloutCapacity = Math.max(0, config.replicas - config.maxUnavailable + config.maxSurge);
-  const rolloutOk = !level.requireZeroDowntime || (config.maxUnavailable === 0 && rolloutCapacity >= level.minimumReady);
-
-  const checks = [
-    { id: "pods", label: "Pods become Ready", pass: readyPods === config.replicas },
-    { id: "traffic", label: `Capacity handles ${level.traffic} req/s`, pass: trafficOk },
-    { id: "request", label: "Memory request is realistic", pass: requestOk },
-    { id: "limits", label: "Memory limit is not below the request", pass: resourceOrderOk },
-  ];
-  if (level.requireZeroDowntime) {
-    checks.push({ id: "rollout", label: "Rolling update keeps capacity online", pass: rolloutOk });
-  }
-
-  return {
-    config,
-    pods,
-    readyPods,
-    capacity,
-    rolloutCapacity,
-    checks,
-    solved: checks.every((check) => check.pass),
-  };
+export function continueMission(level, state) {
+  if (!state.selection) return state;
+  if (!state.selection.good) return { ...state, selection: null };
+  const last = state.stepIndex + 1 >= level.steps.length;
+  return last
+    ? { ...state, selection: null, solved: true }
+    : { ...state, stepIndex: state.stepIndex + 1, selection: null };
 }
 
-export function simulationScore(attempts, hintsUsed) {
-  return Math.max(10, 100 - Math.max(0, attempts - 1) * 15 - hintsUsed * 20);
+export function revealHint(level, state) {
+  if (state.hintsUsed >= level.hints.length) return state;
+  return { ...state, hintsUsed: state.hintsUsed + 1 };
+}
+
+export function missionScore(state) {
+  return Math.max(10, 100 - state.mistakes * 15 - state.hintsUsed * 20);
+}
+
+export function displayedScene(level, state) {
+  const base = currentStep(level, state)?.scene ?? level.steps.at(-1).scene;
+  return state.selection?.result ? { ...base, ...state.selection.result } : base;
 }
