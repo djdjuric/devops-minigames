@@ -2,6 +2,7 @@ import { useState } from "react";
 import { matcherPairs } from "../data/matcher.js";
 import { sample, shuffle } from "../lib/util.js";
 import DocLink from "../components/DocLink.jsx";
+import Points from "../components/Points.jsx";
 
 const PAIRS = 8;
 const POINTS = 10;
@@ -46,7 +47,7 @@ export default function MatcherGame({ onFinish }) {
           Matched {matched.length} / {pairs.length}
         </span>
         <span>Mistakes: {mistakes}</span>
-        <span>{score} pts</span>
+        <Points value={score} />
       </div>
       <p className="lead">Pick a term, then pick its description.</p>
       <div className="columns">
