@@ -1,58 +1,108 @@
 import { useEffect, useState } from "react";
 import { games } from "./games/index.js";
-import { getBest, recordScore } from "./lib/store.js";
+import { emptyProfile, rankFor, starsFor } from "./lib/profile.js";
+import { loadProfile, PROFILE_STORAGE_KEY, recordResult, saveProfile } from "./lib/store.js";
+import Achievements from "./components/Achievements.jsx";
 import Chat from "./components/Chat.jsx";
+import Hud from "./components/Hud.jsx";
+import Guide from "./components/Guide.jsx";
 import Result from "./components/Result.jsx";
+import Stars from "./components/Stars.jsx";
+import { useDuckScreen } from "./components/DuckContext.jsx";
 
 function useHashRoute() {
   const read = () => window.location.hash.replace(/^#\/?/, "");
   const [route, setRoute] = useState(read);
   useEffect(() => {
-    const onChange = () => setRoute(read());
+    const onChange = () => {
+      setRoute(read());
+      window.scrollTo?.(0, 0);
+    };
     window.addEventListener("hashchange", onChange);
     return () => window.removeEventListener("hashchange", onChange);
   }, []);
   return route;
 }
 
-function Home() {
+function Home({ profile }) {
+  useDuckScreen({
+    id: "home",
+    title: "Mission control",
+    summary: "Choose a mission, earn XP, unlock trophies, and improve your rank. Progress saves automatically in this browser.",
+    concepts: ["XP and ranks", "mission stars", "official documentation"],
+    hint: "Start with a simulation marked New, or replay a mission with fewer stars.",
+  });
+  const rank = rankFor(profile.xp);
+  const recommended = [...games].sort((a, b) => (profile.games[a.id]?.plays ?? 0) - (profile.games[b.id]?.plays ?? 0))[0];
+  const firstTime = profile.runs === 0;
+
   return (
     <>
-      <p className="lead">
-        Short games that teach real AWS, Kubernetes, Linux, Git and IaC concepts. Everything links back to the official docs.
-      </p>
+      <section className="hero card">
+        <div>
+          <h2>{firstTime ? "Welcome, new hire" : `Welcome back, ${rank.name}`}</h2>
+          <p>
+            {rank.next
+              ? `${rank.toNext} XP until you are promoted to ${rank.next.name}.`
+              : "You reached the top rank. Chase perfect scores."}
+          </p>
+        </div>
+        <a className="btn primary" href={`#/${recommended.id}`}>
+          {firstTime ? "Start with" : "Play next:"} {recommended.title}
+        </a>
+      </section>
+      <h2 className="section-title">Missions</h2>
       <div className="grid">
-        {games.map((game) => (
-          <a key={game.id} className="card game-card" href={`#/${game.id}`}>
-            <span className="badge">{game.badge}</span>
-            <h2>{game.title}</h2>
-            <p>{game.blurb}</p>
-            <div className="tags">
-              {game.topics.map((topic) => (
-                <span className="tag" key={topic}>
-                  {topic}
-                </span>
-              ))}
-            </div>
-            <span className="best">Best: {getBest(game.id)}</span>
-          </a>
-        ))}
+        {games.map((game) => {
+          const stats = profile.games[game.id];
+          return (
+            <a key={game.id} className="card game-card" href={`#/${game.id}`}>
+              <div className="row between">
+                <span className="badge">{game.badge}</span>
+                {stats ? <Stars count={starsFor(stats.bestPct)} /> : <span className="tag new">New</span>}
+              </div>
+              <h2>{game.title}</h2>
+              <p>{game.blurb}</p>
+              <div className="tags">
+                {game.topics.map((topic) => (
+                  <span className="tag" key={topic}>
+                    {topic}
+                  </span>
+                ))}
+              </div>
+              <span className="best">{stats ? `Best ${stats.best} pts · played ${stats.plays}x` : "Not played yet"}</span>
+            </a>
+          );
+        })}
       </div>
     </>
   );
 }
 
-function GameScreen({ game }) {
+function GameScreen({ game, profile, onResult }) {
+  const [started, setStarted] = useState(false);
   const [run, setRun] = useState(0);
-  const [result, setResult] = useState(null);
+  const [finished, setFinished] = useState(null);
+  const stats = profile.games[game.id];
+  const phase = finished ? "debrief" : started ? "mission" : "briefing";
+  useDuckScreen({
+    id: `${game.id}-${phase}`,
+    title: `${game.title} · ${phase}`,
+    summary: finished
+      ? `The mission is complete. Review the score, XP, stars, and any trophies before replaying or choosing another mission.`
+      : started
+        ? game.duck ?? `${game.blurb} Follow the mission goal, observe the feedback, and change one thing at a time.`
+        : `${game.blurb} This briefing explains the controls and scoring before the mission starts.`,
+    concepts: game.topics,
+    hint: started ? "Read the goal and current evidence first. Change one variable at a time and observe the result." : "Read How to play, then start the mission when the controls make sense.",
+  });
 
   function finish(score, max) {
-    const { best, isNewBest } = recordScore(game.id, score);
-    setResult({ score, max, best, isNewBest });
+    setFinished({ score, max, outcome: onResult({ gameId: game.id, score, max }) });
   }
 
   function replay() {
-    setResult(null);
+    setFinished(null);
     setRun(run + 1);
   }
 
@@ -62,8 +112,31 @@ function GameScreen({ game }) {
         All games
       </a>
       <h2 className="game-title">{game.title}</h2>
-      {result ? (
-        <Result {...result} onReplay={replay} onHome={() => (window.location.hash = "#/")} />
+      {!started ? (
+        <div className="card intro">
+          <p className="lead">{game.blurb}</p>
+          <h3>How to play</h3>
+          <ul>
+            {game.howTo.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <div className="tags">
+            {game.topics.map((topic) => (
+              <span className="tag" key={topic}>
+                {topic}
+              </span>
+            ))}
+          </div>
+          <div className="row between">
+            <span className="muted">{stats ? `Best ${stats.best} pts` : "First time here"}</span>
+            <button className="btn primary" onClick={() => setStarted(true)} autoFocus>
+              Start mission
+            </button>
+          </div>
+        </div>
+      ) : finished ? (
+        <Result {...finished} onReplay={replay} onHome={() => (window.location.hash = "#/")} />
       ) : (
         <game.Component key={run} onFinish={finish} />
       )}
@@ -73,7 +146,31 @@ function GameScreen({ game }) {
 
 export default function App() {
   const route = useHashRoute();
+  const [profile, setProfile] = useState(loadProfile);
   const game = games.find((g) => g.id === route);
+
+  useEffect(() => {
+    const syncProgress = (event) => {
+      if (event.key === PROFILE_STORAGE_KEY) setProfile(loadProfile());
+    };
+    window.addEventListener("storage", syncProgress);
+    return () => window.removeEventListener("storage", syncProgress);
+  }, []);
+
+  function handleResult(result) {
+    const outcome = recordResult(result, games.length);
+    setProfile(outcome.profile);
+    return outcome;
+  }
+
+  function replaceProfile(restored) {
+    const saved = saveProfile(restored);
+    setProfile(saved);
+  }
+
+  function reset() {
+    replaceProfile(emptyProfile());
+  }
 
   return (
     <div className="app">
@@ -81,8 +178,19 @@ export default function App() {
         <a href="#/" className="logo">
           DevOps Minigames
         </a>
+        <Hud profile={profile} />
       </header>
-      <main>{game ? <GameScreen key={game.id} game={game} /> : <Home />}</main>
+      <main>
+        {route === "guide" ? (
+          <Guide />
+        ) : route === "achievements" ? (
+          <Achievements profile={profile} onReset={reset} onImport={replaceProfile} />
+        ) : game ? (
+          <GameScreen key={game.id} game={game} profile={profile} onResult={handleResult} />
+        ) : (
+          <Home profile={profile} />
+        )}
+      </main>
       <footer>Open source. Questions are based on official AWS, Kubernetes, Git and Linux documentation.</footer>
       <Chat />
     </div>

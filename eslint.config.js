@@ -4,13 +4,13 @@ import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
-  { ignores: ["dist", "node_modules", ".wrangler"] },
+  { ignores: ["dist", "node_modules", ".wrangler", "playwright-report", "test-results"] },
   js.configs.recommended,
   {
-    files: ["src/**/*.{js,jsx}"],
+    files: ["src/**/*.{js,jsx}", "ui-test/**/*.{js,jsx}"],
     plugins: { react, "react-hooks": reactHooks },
     languageOptions: {
-      globals: globals.browser,
+      globals: { ...globals.browser, ...globals.node },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     settings: { react: { version: "detect" } },
@@ -22,7 +22,7 @@ export default [
     },
   },
   {
-    files: ["functions/**/*.js", "test/**/*.js", "*.config.js"],
-    languageOptions: { globals: { ...globals.node, ...globals.serviceworker } },
+    files: ["functions/**/*.js", "test/**/*.js", "e2e/**/*.js", "*.config.js"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser, ...globals.serviceworker } },
   },
 ];

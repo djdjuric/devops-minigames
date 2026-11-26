@@ -6,6 +6,9 @@ Short browser games that teach AWS, Kubernetes, Linux, Git and IaC. Players need
 
 | Game | What it teaches |
 | --- | --- |
+| Kubernetes Control Room | Replicas, readiness probes, requests, limits, capacity and zero-downtime rollouts |
+| Shell Lab | Docker logs, inspection, ports, memory limits, mounts, environment variables and log filtering |
+| Security Group Defender | Protocols, port ranges, source CIDRs, least privilege and default deny |
 | IAM Policy Debugger | Policy evaluation: explicit deny, implicit deny, conditions, boundaries |
 | Subnet Sizer | CIDR math, AWS reserved addresses, overlap and alignment |
 | Tool Matcher | AWS, Kubernetes, Git and Linux vocabulary |
@@ -13,7 +16,9 @@ Short browser games that teach AWS, Kubernetes, Linux, Git and IaC. Players need
 | Spot the Bug | Insecure or broken Terraform, Kubernetes, Dockerfile, Actions and Bash |
 | Quiz Blitz | Timed questions across the stack |
 
-Scores are stored in the browser's localStorage. There is also a chat helper ("the Duck") backed by Cloudflare Workers AI. If the backend is not reachable it falls back to a small built-in bot.
+XP, ranks, daily streaks, trophies, stars, scores and play counts are stored in the browser's localStorage. The Trophy cabinet can export and restore a JSON backup.
+
+The persistent Duck assistant explains the current screen and offers conceptual hints. It uses Cloudflare Workers AI when available and falls back to a context-aware local helper. The backend receives a bounded description of the current screen, not saved progress or other browser data.
 
 ## Stack
 
@@ -28,7 +33,8 @@ npm install
 npm run dev        # frontend only, chat falls back to the local bot
 npm run cf:dev     # build, then run Pages with the function and AI binding
 npm run lint
-npm test
+npm test           # 58 logic tests and 7 component interaction tests
+npm run test:ui    # Playwright in desktop and mobile Chromium
 npm run build
 ```
 
@@ -42,10 +48,11 @@ Content lives in `src/data/`. Each question or scenario must have an explanation
 
 `.github/workflows/ci.yml` runs on every pull request and push to `main`:
 
-1. Lint, test, build and `npm audit` for production dependencies.
-2. Secret scan with gitleaks.
-3. Preview deploy of same-repo pull requests (forks never receive secrets).
-4. Production deploy from `main`, through the `production` GitHub environment.
+1. Lint, 58 logic tests, 7 React component interaction tests, build and `npm audit` for production dependencies.
+2. Playwright tests in desktop and mobile Chromium, including simulation flows, persistence, responsive overflow, console errors and axe accessibility checks.
+3. Secret scan with gitleaks.
+4. Preview deploy of same-repo pull requests (forks never receive secrets).
+5. Production deploy from `main`, through the `production` GitHub environment.
 
 CodeQL runs on pull requests and weekly. Dependabot updates npm packages and Actions.
 

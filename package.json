@@ -7,23 +7,34 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test \"test/*.test.js\"",
+    "test": "npm run test:logic && npm run test:components",
     "lint": "eslint .",
     "cf:dev": "npm run build && wrangler pages dev dist",
-    "cf:deploy": "npm run build && wrangler pages deploy dist --project-name=devops-minigames"
+    "cf:deploy": "npm run build && wrangler pages deploy dist --project-name=devops-minigames",
+    "test:logic": "node --test \"test/*.test.js\"",
+    "test:components": "vitest run",
+    "test:ui": "playwright test",
+    "test:ui:headed": "playwright test --headed"
   },
   "dependencies": {
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.65.1",
+    "@testing-library/jest-dom": "^8.0.0",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
     "@vitejs/plugin-react": "^6.3.0",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
+    "jsdom": "^31.0.1",
     "vite": "^8.3.8",
+    "vitest": "^5.1.2",
     "wrangler": "^4.168.0"
   }
 }
